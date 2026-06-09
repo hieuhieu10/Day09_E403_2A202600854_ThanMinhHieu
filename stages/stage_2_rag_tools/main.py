@@ -70,6 +70,16 @@ LEGAL_KNOWLEDGE = [
         ),
     },
     {
+        "id": "labor_law",
+        "keywords": ["lao động", "sa thải", "hợp đồng lao động", "labor", "termination"],
+        "text": (
+            "Theo Bộ luật Lao động Việt Nam 2019, người sử dụng lao động có thể "
+            "đơn phương chấm dứt hợp đồng trong các trường hợp: (1) người lao động "
+            "thường xuyên không hoàn thành công việc; (2) bị ốm đau, tai nạn đã điều trị "
+            "12 tháng chưa khỏi; (3) thiên tai, hỏa hoạn; (4) người lao động đủ tuổi nghỉ hưu."
+        ),
+    },
+    {
         "id": "injunctive_relief",
         "keywords": ["injunction", "restraining", "order", "equitable", "nda", "breach"],
         "text": (
@@ -135,9 +145,24 @@ def calculate_damages(breach_type: str, contract_value: float) -> str:
     )
 
 
-TOOLS = [search_legal_database, calculate_damages]
+@tool
+def check_statute_of_limitations(case_type: str) -> str:
+    """Check the statute of limitations for a legal case type."""
+    case_type_lower = case_type.lower()
 
-QUESTION = "What are the legal consequences if a company breaches a non-disclosure agreement?"
+    if "hợp đồng" in case_type_lower or "contract" in case_type_lower:
+        return "Thời hiệu khởi kiện tranh chấp hợp đồng thường là 3 năm kể từ ngày quyền và lợi ích hợp pháp bị xâm phạm."
+    if "lao động" in case_type_lower or "labor" in case_type_lower:
+        return "Thời hiệu khởi kiện tranh chấp lao động phụ thuộc loại tranh chấp; nhiều tranh chấp cá nhân thường là 1 năm kể từ ngày phát hiện hành vi vi phạm."
+    if "dân sự" in case_type_lower or "civil" in case_type_lower:
+        return "Thời hiệu khởi kiện vụ việc dân sự thường phụ thuộc loại yêu cầu cụ thể; cần xác định đúng nhóm tranh chấp để tra cứu chính xác."
+
+    return "Chưa xác định được loại vụ việc. Hãy cung cấp thêm thông tin để tra cứu thời hiệu khởi kiện."
+
+
+TOOLS = [search_legal_database, calculate_damages, check_statute_of_limitations]
+
+QUESTION = "Thời hiệu khởi kiện vụ vi phạm hợp đồng lao động là bao lâu?"
 
 
 async def main():
@@ -146,7 +171,7 @@ async def main():
     print("=" * 70)
     print()
     print("[How it works]")
-    print("  1. LLM receives tools (search_legal_database, calculate_damages)")
+    print("  1. LLM receives tools (search_legal_database, calculate_damages, check_statute_of_limitations)")
     print("  2. LLM decides which tools to call and with what arguments")
     print("  3. We execute the tools and feed results back to the LLM")
     print("  4. LLM generates a final answer grounded in retrieved data")
@@ -164,6 +189,10 @@ async def main():
                 "You are a legal expert with access to a legal knowledge base and a damage "
                 "calculator. Use the tools provided to ground your analysis in specific statutes "
                 "and case law. Always search the database before answering. "
+                "If the user asks about statute of limitations, limitation periods, or time limits "
+                "for filing a claim, use check_statute_of_limitations first. If the user asks about "
+                "labor law, employment termination, or labor contracts, prioritize the labor_law "
+                "knowledge base entry through search_legal_database. "
                 "Keep your final response under 400 words."
             )
         ),
